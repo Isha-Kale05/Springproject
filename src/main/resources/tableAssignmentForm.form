@@ -1,0 +1,59 @@
+{
+  "components": [
+    {
+      "label": "Table number:",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1l0f9t0",
+        "columns": null
+      },
+      "id": "Field_0mq9mjz",
+      "key": "tableNumber",
+      "defaultValue": "28"
+    },
+    {
+      "label": "Restaurant name:",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1xgqrvf",
+        "columns": null
+      },
+      "id": "Field_0bg92vr",
+      "key": "restaurantName",
+      "defaultValue": "Krishna Veg"
+    },
+    {
+      "values": [
+        {
+          "label": "Reserved",
+          "value": "reserved"
+        },
+        {
+          "label": "Occupied",
+          "value": "occupied"
+        },
+        {
+          "label": "Available",
+          "value": "available"
+        }
+      ],
+      "label": "Status",
+      "type": "select",
+      "layout": {
+        "row": "Row_0ahydad",
+        "columns": null
+      },
+      "id": "Field_0blaywi",
+      "key": "restaurantStatus"
+    }
+  ],
+  "type": "default",
+  "id": "tableAssignment",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.21.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "schemaVersion": 15
+}

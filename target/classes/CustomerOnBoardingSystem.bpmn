@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_03ygdxf" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.21.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.20.0">
+  <bpmn:collaboration id="Customer-onboarding-system">
+    <bpmn:participant id="CustomerOnboardingSystemParticipant" name="Customer on-boarding System" processRef="Customer-on-boardingProcess" />
+  </bpmn:collaboration>
+  <bpmn:process id="Customer-on-boardingProcess" name="Customer on-boarding process" isExecutable="true" camunda:historyTimeToLive="P180D">
+    <bpmn:extensionElements />
+    <bpmn:startEvent id="CustomerOnboardingIntiatedStartEvent" name="Customer on-boarding intiated">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${generateBusinessKey}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0blccmb</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="GatherCustomerDataTask" name="Gather customer data" camunda:formRef="Customer_Data" camunda:formRefBinding="latest">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_0blccmb</bpmn:incoming>
+      <bpmn:outgoing>Flow_0t30kez</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0blccmb" sourceRef="CustomerOnboardingIntiatedStartEvent" targetRef="GatherCustomerDataTask" />
+    <bpmn:sequenceFlow id="Flow_0t30kez" sourceRef="GatherCustomerDataTask" targetRef="KYCCheckCallActivity" />
+    <bpmn:sequenceFlow id="Flow_00sf5wk" sourceRef="KYCCheckCallActivity" targetRef="GetCreditScoreTask" />
+    <bpmn:sequenceFlow id="Flow_0dt5n97" sourceRef="GetCreditScoreTask" targetRef="CheckApplicationAutomaticallyTask" />
+    <bpmn:sequenceFlow id="Flow_1s834xm" sourceRef="CheckApplicationAutomaticallyTask" targetRef="RiskGateway" />
+    <bpmn:sequenceFlow id="NoRiskSequenceFlow" name="no risk" sourceRef="RiskGateway" targetRef="CustomerOnboardedTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskLevel == "no risk"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="ModerateRiskSequenceFlow" name="moderate risk" sourceRef="RiskGateway" targetRef="CheckAdditionalDocumentsTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskLevel == "moderate risk"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SevereRiskSequenceFlow" name="severe risk" sourceRef="RiskGateway" targetRef="RejectApplicationTask" />
+    <bpmn:sequenceFlow id="Flow_0o4vtlo" sourceRef="RequestDocumentCallActivity" targetRef="CheckAdditionalDocumentsTask" />
+    <bpmn:sequenceFlow id="Flow_1yhuthq" sourceRef="CheckAdditionalDocumentsTask" targetRef="Gateway_0ude0oh" />
+    <bpmn:sequenceFlow id="Flow_0uid38g" name="No" sourceRef="Gateway_0ude0oh" targetRef="Gateway_1mgw91b">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${documentNeeded=="no"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0gih38u" name="yes" sourceRef="Gateway_0ude0oh" targetRef="RequestDocumentCallActivity" />
+    <bpmn:sequenceFlow id="ApprovedSequenceFlow" name="approved" sourceRef="Gateway_1mgw91b" targetRef="CustomerOnboardedTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${application_status == "approved"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="NotApprovedSequenceFlow" name="not approved" sourceRef="Gateway_1mgw91b" targetRef="RejectApplicationTask" />
+    <bpmn:sequenceFlow id="Flow_1nntim2" sourceRef="RejectApplicationTask" targetRef="ApplicationRejectedEndEvent" />
+    <bpmn:sequenceFlow id="Flow_1222i6n" sourceRef="CustomerOnboardedTask" targetRef="ProvideServicesTask" />
+    <bpmn:sequenceFlow id="Flow_10bwwkq" sourceRef="ProvideServicesTask" targetRef="GetCustomerFeedbackTask" />
+    <bpmn:sequenceFlow id="Flow_020nwta" sourceRef="GetCustomerFeedbackTask" targetRef="CustomerOnboardedEndEvent" />
+    <bpmn:sequenceFlow id="Flow_1pykddq" sourceRef="CompleteKYCIn7DaysBoundaryEvent" targetRef="Event_1ark8tm" />
+    <bpmn:callActivity id="KYCCheckCallActivity" name="KYC check" calledElement="KYCCheckProcess">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in local="true" variables="all" />
+        <camunda:out local="true" variables="all" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0t30kez</bpmn:incoming>
+      <bpmn:outgoing>Flow_00sf5wk</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:userTask id="GetCreditScoreTask" name="Get credit score">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="age" label="Age" type="long" defaultValue="30" />
+          <camunda:formField id="employment" label="Employment" type="string" defaultValue="salaried" />
+          <camunda:formField id="income" label="Income" type="long" defaultValue="450000" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00sf5wk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dt5n97</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:businessRuleTask id="CheckApplicationAutomaticallyTask" name="Check application automatically" camunda:resultVariable="riskLevel" camunda:decisionRef="Check_risk" camunda:mapDecisionResult="singleEntry">
+      <bpmn:incoming>Flow_0dt5n97</bpmn:incoming>
+      <bpmn:outgoing>Flow_1s834xm</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="RiskGateway" name="risk?" default="SevereRiskSequenceFlow">
+      <bpmn:incoming>Flow_1s834xm</bpmn:incoming>
+      <bpmn:outgoing>NoRiskSequenceFlow</bpmn:outgoing>
+      <bpmn:outgoing>ModerateRiskSequenceFlow</bpmn:outgoing>
+      <bpmn:outgoing>SevereRiskSequenceFlow</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="CheckAdditionalDocumentsTask" name="Check if additional documents are needed">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="documentNeeded" label="Documents needed" type="string" defaultValue="no" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>ModerateRiskSequenceFlow</bpmn:incoming>
+      <bpmn:incoming>Flow_0o4vtlo</bpmn:incoming>
+      <bpmn:outgoing>Flow_1yhuthq</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_0ude0oh" name="documents needed?" default="Flow_0gih38u">
+      <bpmn:incoming>Flow_1yhuthq</bpmn:incoming>
+      <bpmn:outgoing>Flow_0uid38g</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0gih38u</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="RequestDocumentCallActivity" name="Request document" calledElement="RequestDocument">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="#{execution.processBusinessKey}" />
+        <camunda:in local="true" variables="all" />
+        <camunda:out local="true" variables="all" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0gih38u</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o4vtlo</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_1mgw91b" name="Document status?" default="NotApprovedSequenceFlow">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${checkDocumentStatus}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0uid38g</bpmn:incoming>
+      <bpmn:outgoing>ApprovedSequenceFlow</bpmn:outgoing>
+      <bpmn:outgoing>NotApprovedSequenceFlow</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="RejectApplicationTask" name="Reject application" camunda:delegateExpression="${rejectApplication}">
+      <bpmn:incoming>SevereRiskSequenceFlow</bpmn:incoming>
+      <bpmn:incoming>NotApprovedSequenceFlow</bpmn:incoming>
+      <bpmn:outgoing>Flow_1nntim2</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sendTask id="CustomerOnboardedTask" name="Customer on-boarded" camunda:delegateExpression="${customerOnboarded}">
+      <bpmn:incoming>NoRiskSequenceFlow</bpmn:incoming>
+      <bpmn:incoming>ApprovedSequenceFlow</bpmn:incoming>
+      <bpmn:outgoing>Flow_1222i6n</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:userTask id="ProvideServicesTask" name="Provide services" camunda:formRef="Provide_services" camunda:formRefBinding="latest">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_1222i6n</bpmn:incoming>
+      <bpmn:outgoing>Flow_10bwwkq</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="GetCustomerFeedbackTask" name="Get customer feedback" camunda:formRef="Customer_feedback" camunda:formRefBinding="latest">
+      <bpmn:incoming>Flow_10bwwkq</bpmn:incoming>
+      <bpmn:outgoing>Flow_020nwta</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="CustomerOnboardedEndEvent" name="Customer on-boarded">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_020nwta</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="ApplicationRejectedEndEvent" name="Application rejected">
+      <bpmn:incoming>Flow_1nntim2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_1ark8tm">
+      <bpmn:incoming>Flow_1pykddq</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="CompleteKYCIn7DaysBoundaryEvent" name="Complete KYC in 7 days" cancelActivity="false" attachedToRef="KYCCheckCallActivity">
+      <bpmn:outgoing>Flow_1pykddq</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1lan2ye">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_0r7n1ea" name="Document needed" />
+  <bpmn:message id="Message_1q3pp6o" name="Send welcome kit" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Customer-onboarding-system">
+      <bpmndi:BPMNShape id="Participant_15xqool_di" bpmnElement="CustomerOnboardingSystemParticipant" isHorizontal="true">
+        <dc:Bounds x="129" y="80" width="1451" height="540" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="CustomerOnboardingIntiatedStartEvent">
+        <dc:Bounds x="179" y="129" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="172" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08hq5aq_di" bpmnElement="GatherCustomerDataTask">
+        <dc:Bounds x="260" y="107" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_19snrhj_di" bpmnElement="KYCCheckCallActivity">
+        <dc:Bounds x="420" y="107" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0la4nyi_di" bpmnElement="GetCreditScoreTask">
+        <dc:Bounds x="570" y="107" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1hmjvzk_di" bpmnElement="CheckApplicationAutomaticallyTask">
+        <dc:Bounds x="720" y="107" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1d2v159_di" bpmnElement="RiskGateway" isMarkerVisible="true">
+        <dc:Bounds x="865" y="122" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="848" y="123" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08itnxy_di" bpmnElement="CheckAdditionalDocumentsTask">
+        <dc:Bounds x="950" y="260" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0ude0oh_di" bpmnElement="Gateway_0ude0oh" isMarkerVisible="true">
+        <dc:Bounds x="1095" y="275" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1093" y="245" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0zupfvp_di" bpmnElement="RequestDocumentCallActivity">
+        <dc:Bounds x="1070" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1mgw91b_di" bpmnElement="Gateway_1mgw91b" isMarkerVisible="true">
+        <dc:Bounds x="1205" y="275" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1266" y="290" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0n69jo6_di" bpmnElement="RejectApplicationTask">
+        <dc:Bounds x="1180" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_15zynxd_di" bpmnElement="CustomerOnboardedTask">
+        <dc:Bounds x="1050" y="107" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00kqqps_di" bpmnElement="ProvideServicesTask">
+        <dc:Bounds x="1240" y="107" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0bytcaj_di" bpmnElement="GetCustomerFeedbackTask">
+        <dc:Bounds x="1380" y="107" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tvhzpw_di" bpmnElement="CustomerOnboardedEndEvent">
+        <dc:Bounds x="1522" y="129" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1509" y="172" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0z3ki4m_di" bpmnElement="ApplicationRejectedEndEvent">
+        <dc:Bounds x="1332" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1326" y="565" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ark8tm_di" bpmnElement="Event_1ark8tm">
+        <dc:Bounds x="562" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0y9n507_di" bpmnElement="CompleteKYCIn7DaysBoundaryEvent">
+        <dc:Bounds x="512" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="437" y="196" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0blccmb_di" bpmnElement="Flow_0blccmb">
+        <di:waypoint x="215" y="147" />
+        <di:waypoint x="260" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t30kez_di" bpmnElement="Flow_0t30kez">
+        <di:waypoint x="360" y="147" />
+        <di:waypoint x="420" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00sf5wk_di" bpmnElement="Flow_00sf5wk">
+        <di:waypoint x="520" y="147" />
+        <di:waypoint x="570" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dt5n97_di" bpmnElement="Flow_0dt5n97">
+        <di:waypoint x="670" y="147" />
+        <di:waypoint x="720" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s834xm_di" bpmnElement="Flow_1s834xm">
+        <di:waypoint x="820" y="147" />
+        <di:waypoint x="865" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ywv4iy_di" bpmnElement="NoRiskSequenceFlow">
+        <di:waypoint x="915" y="147" />
+        <di:waypoint x="1050" y="147" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="954" y="131" width="34" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04j1y9c_di" bpmnElement="ModerateRiskSequenceFlow">
+        <di:waypoint x="890" y="172" />
+        <di:waypoint x="890" y="300" />
+        <di:waypoint x="950" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="806" y="293" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jd9n1t_di" bpmnElement="SevereRiskSequenceFlow">
+        <di:waypoint x="890" y="172" />
+        <di:waypoint x="890" y="540" />
+        <di:waypoint x="1180" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="900" y="513" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o4vtlo_di" bpmnElement="Flow_0o4vtlo">
+        <di:waypoint x="1070" y="440" />
+        <di:waypoint x="1000" y="440" />
+        <di:waypoint x="1000" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1yhuthq_di" bpmnElement="Flow_1yhuthq">
+        <di:waypoint x="1050" y="300" />
+        <di:waypoint x="1095" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0uid38g_di" bpmnElement="Flow_0uid38g">
+        <di:waypoint x="1145" y="300" />
+        <di:waypoint x="1205" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1168" y="282" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gih38u_di" bpmnElement="Flow_0gih38u">
+        <di:waypoint x="1120" y="325" />
+        <di:waypoint x="1120" y="400" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1121" y="368" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_078rebl_di" bpmnElement="ApprovedSequenceFlow">
+        <di:waypoint x="1230" y="275" />
+        <di:waypoint x="1230" y="170" />
+        <di:waypoint x="1150" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1189" y="196" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1iuvf0d_di" bpmnElement="NotApprovedSequenceFlow">
+        <di:waypoint x="1230" y="325" />
+        <di:waypoint x="1230" y="500" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1207" y="427" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1nntim2_di" bpmnElement="Flow_1nntim2">
+        <di:waypoint x="1280" y="540" />
+        <di:waypoint x="1332" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1222i6n_di" bpmnElement="Flow_1222i6n">
+        <di:waypoint x="1150" y="147" />
+        <di:waypoint x="1240" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10bwwkq_di" bpmnElement="Flow_10bwwkq">
+        <di:waypoint x="1340" y="147" />
+        <di:waypoint x="1380" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_020nwta_di" bpmnElement="Flow_020nwta">
+        <di:waypoint x="1480" y="147" />
+        <di:waypoint x="1522" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pykddq_di" bpmnElement="Flow_1pykddq">
+        <di:waypoint x="530" y="198" />
+        <di:waypoint x="530" y="250" />
+        <di:waypoint x="562" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
